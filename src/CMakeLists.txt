@@ -1,5 +1,5 @@
 set(COMMON_FLAGS
-    -std=c++17
+    -std=c++20
 )
 
 set(WARNING_FLAGS
