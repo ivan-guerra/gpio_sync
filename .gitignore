@@ -7,3 +7,9 @@ bin
 # Ignore the cscope/ctags index files.
 cscope.*
 tags
+
+# Ignore Syntastic Vim plugin config.
+.syntastic_cpp_config
+
+# Ignore CMake compile commands file used by clang-tidy.
+compile_commands.json
