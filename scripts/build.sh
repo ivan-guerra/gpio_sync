@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BUILD_TYPE="Release"
+TOOLCHAIN_FILE=""
 
 source config.sh
 
@@ -11,6 +12,7 @@ Help()
     echo "usage: build.sh [OPTION]..."
     echo "options:"
     echo -e "\tg    enable debug info"
+    echo -e "\tc    cross compile for the beaglebone black"
     echo -e "\th    print this help message"
 }
 
@@ -22,7 +24,7 @@ Main()
     pushd $GSYNC_BUILD_DIR
         cmake ../                               \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -DCMAKE_TOOLCHAIN_FILE=../cmake/arm-linux-gnueabihf-gcc.cmake \
+              -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE \
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
         make -j$(nproc) all                  && \
         make install
@@ -35,10 +37,11 @@ Main()
     popd
 }
 
-while getopts ":hg" flag
+while getopts ":hgc" flag
 do
     case "$flag" in
         g) BUILD_TYPE="Debug";;
+        c) TOOLCHAIN_FILE=${GSYNC_PROJECT_PATH}/cmake/arm-linux-gnueabihf-gcc.cmake;;
         h) Help
            exit;;
        \?) echo "error: invalid option '$OPTARG'"
