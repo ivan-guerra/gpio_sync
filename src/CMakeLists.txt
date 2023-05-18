@@ -1,5 +1,5 @@
 set(COMMON_FLAGS
-    -std=c++20
+    -std=c++2a
 )
 
 set(WARNING_FLAGS
@@ -33,4 +33,5 @@ add_link_options(
     "$<$<CONFIG:Debug>:-fsanitize=address>"
 )
 
+add_subdirectory(gpio)
 add_subdirectory(gtimer)

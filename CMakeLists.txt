@@ -6,5 +6,7 @@ project(gpio_sync
 
 set(GSYNC_BIN_DIR "${CMAKE_SOURCE_DIR}/bin"
     CACHE STRING  "${PROJECT_NAME} binary directory.")
+set(GSYNC_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include"
+    CACHE STRING      "${PROJECT_NAME} include directory.")
 
 add_subdirectory(src)
