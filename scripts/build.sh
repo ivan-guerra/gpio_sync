@@ -21,6 +21,7 @@ Main()
 
     pushd $GSYNC_BUILD_DIR
         cmake ../                               \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
               -DCMAKE_TOOLCHAIN_FILE=../cmake/arm-linux-gnueabihf-gcc.cmake \
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
         make -j$(nproc) all                  && \
