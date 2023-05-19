@@ -11,6 +11,10 @@ target_sources(${PROJECT_NAME}
     PRIVATE gtimer.cc
 )
 
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE gpio
+)
+
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION "${GSYNC_BIN_DIR}"
 )
