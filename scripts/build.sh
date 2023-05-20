@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BUILD_TYPE="Release"
+BUILD_DOCS="OFF"
 TOOLCHAIN_FILE=""
 
 source config.sh
@@ -12,6 +13,7 @@ Help()
     echo "usage: build.sh [OPTION]..."
     echo "options:"
     echo -e "\tg    enable debug info"
+    echo -e "\td    build project docs"
     echo -e "\tc    cross compile for the beaglebone black"
     echo -e "\th    print this help message"
 }
@@ -22,7 +24,8 @@ Main()
     mkdir -pv $GSYNC_BUILD_DIR
 
     pushd $GSYNC_BUILD_DIR
-        cmake ../                               \
+        cmake ../ \
+              -DBUILD_DOCS=$BUILD_DOCS \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
               -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE \
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
@@ -37,10 +40,11 @@ Main()
     popd
 }
 
-while getopts ":hgc" flag
+while getopts ":hgcd" flag
 do
     case "$flag" in
         g) BUILD_TYPE="Debug";;
+        d) BUILD_DOCS="ON";;
         c) TOOLCHAIN_FILE=${GSYNC_PROJECT_PATH}/cmake/arm-linux-gnueabihf-gcc.cmake;;
         h) Help
            exit;;

@@ -13,3 +13,6 @@ tags
 
 # Ignore CMake compile commands file used by clang-tidy.
 compile_commands.json
+
+# Ignore the docs.
+docs/gsync
