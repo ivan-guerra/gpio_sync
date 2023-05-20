@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <cstdio>
@@ -12,6 +13,11 @@
 namespace gsync {
 
 const std::string Gpio::kGpioPathPrefix("/sys/class/gpio/");
+
+static bool FileExists(const std::string& filename) {
+    struct stat buffer;
+    return (0 == stat(filename.c_str(), &buffer));
+}
 
 static bool Write(const std::string path, const std::string filename,
                   const std::string value) {
@@ -43,11 +49,17 @@ static std::string Read(const std::string& path, const std::string& filename) {
 }
 
 bool Gpio::ExportGpio() const {
-    return Write(kGpioPathPrefix, "export", number_);
+    if (!FileExists(kGpioPathPrefix + "gpio" + std::to_string(number_))) {
+        return Write(kGpioPathPrefix, "export", number_);
+    }
+    return true;
 }
 
 bool Gpio::UnexportGpio() const {
-    return Write(kGpioPathPrefix, "unexport", number_);
+    if (FileExists(kGpioPathPrefix + "gpio" + std::to_string(number_))) {
+        return Write(kGpioPathPrefix, "unexport", number_);
+    }
+    return true;
 }
 
 Gpio::Gpio(int number)
@@ -145,13 +157,11 @@ bool Gpio::WaitForEdge() {
 
     int epollfd = epoll_create(1);
     if (-1 == epollfd) {
-        perror("failed to create epollfd");
         return false;
     }
 
     int fd = open((path_ + "value").c_str(), O_RDONLY | O_NONBLOCK);
     if (-1 == fd) {
-        perror("failed to open file");
         return false;
     }
 
@@ -161,7 +171,6 @@ bool Gpio::WaitForEdge() {
 
     /* register the file descriptor on the epoll instance. */
     if (-1 == epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev)) {
-        perror("failed to add control interface");
         return false;
     }
 
@@ -170,7 +179,6 @@ bool Gpio::WaitForEdge() {
     while (events <= 1) { /* we ignore the first event */
         int rc = epoll_wait(epollfd, &ev, 1, -1);
         if (-1 == rc) {
-            perror("poll wait fail");
             success = false;
             break;
         }

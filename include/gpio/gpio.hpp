@@ -116,7 +116,8 @@ class Gpio {
      *
      * This method has the side effect of setting the GPIO to be an input pin.
      *
-     * @return True if an event is detected, false otherwise.
+     * @return True if an event is detected. On error, false is returned and
+     * errno is set.
      */
     bool WaitForEdge();
 
