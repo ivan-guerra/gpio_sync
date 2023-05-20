@@ -35,3 +35,4 @@ add_link_options(
 
 add_subdirectory(gpio)
 add_subdirectory(gtimer)
+add_subdirectory(shmem)
