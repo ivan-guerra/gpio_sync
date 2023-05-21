@@ -1,17 +1,12 @@
-#include <malloc.h>
 #include <signal.h>
-#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 
-#include <array>
 #include <atomic>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
 
 #include "util/gpio/gpio.hpp"
+#include "util/mem/mem.hpp"
 #include "util/shmem/shmem.hpp"
 
 /* Make sure the atomic type we'll operate on is lock-free. */
@@ -22,51 +17,6 @@ std::atomic_bool exit_gtimer = false;
 static void ExitHandler(int sig) {
     (void)sig; /* Cast to void to avoid unused variable warning. */
     exit_gtimer = true;
-}
-
-static bool ConfigureMallocBehavior() {
-    /* Lock all process pages to RAM. */
-    if (-1 == mlockall(MCL_CURRENT | MCL_FUTURE)) {
-        perror("failed to lock memory pages via mlockall()");
-        return false;
-    }
-
-    /* Disable heap trimming. */
-    if (!mallopt(M_TRIM_THRESHOLD, -1)) {
-        perror("failed to set M_TRIM_THRESHOLD option via mallopt()");
-        return false;
-    }
-
-    /* Allocate dynamic memory to the process heap (i.e., don't use mmap()). */
-    if (!mallopt(M_MMAP_MAX, 0)) {
-        perror("failed to set M_MMAP_MAX option via mallopt()");
-        return false;
-    }
-
-    return true;
-}
-
-static void PrefaultStack() {
-    constexpr int64_t kMaxStackSize = 512 * 1024;
-    std::array<unsigned char, kMaxStackSize> dummy = {0};
-    for (int64_t i = 0; i < kMaxStackSize; i += sysconf(_SC_PAGESIZE)) {
-        dummy[i] = 1;
-    }
-}
-
-void PrefaultHeap() {
-    const int kMaxHeapSize = 8 * 1024 * 1024;
-    unsigned char* dummy = (unsigned char*)std::malloc(kMaxHeapSize);
-    if (!dummy) {
-        std::cerr << "failed to malloc " << kMaxHeapSize
-                  << " bytes when prefaulting heap" << std::endl;
-        return;
-    }
-
-    for (int64_t i = 0; i < kMaxHeapSize; i += sysconf(_SC_PAGESIZE)) {
-        dummy[i] = 1;
-    }
-    std::free(dummy);
 }
 
 static int InitAction(int sig, int flags, void (*handler)(int)) {
@@ -93,11 +43,7 @@ static void RunEventLoop(gsync::Gpio& runtime_gpio,
 
 int main(int argc, char** argv) {
     /* See https://programmador.com/posts/real-time-linux-app-development/ */
-    if (!ConfigureMallocBehavior()) {
-        return 1;
-    }
-    PrefaultStack();
-    PrefaultHeap();
+    gsync::mem::ConfigureMemForRt();
 
     /* Use the SIGINT signal to trigger program exit. */
     if (-1 == InitAction(SIGINT, 0, ExitHandler)) {
