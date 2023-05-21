@@ -33,6 +33,5 @@ add_link_options(
     "$<$<CONFIG:Debug>:-fsanitize=address>"
 )
 
-add_subdirectory(gpio)
 add_subdirectory(gtimer)
-add_subdirectory(shmem)
+add_subdirectory(util)

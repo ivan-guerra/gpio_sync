@@ -1,4 +1,4 @@
-#include "gpio/gpio.hpp"
+#include "util/gpio/gpio.hpp"
 
 #include <fcntl.h>
 #include <sys/epoll.h>

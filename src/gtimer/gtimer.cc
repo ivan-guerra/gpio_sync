@@ -11,8 +11,8 @@
 #include <cstring>
 #include <iostream>
 
-#include "gpio/gpio.hpp"
-#include "shmem/shmem.hpp"
+#include "util/gpio/gpio.hpp"
+#include "util/shmem/shmem.hpp"
 
 /* Make sure the atomic type we'll operate on is lock-free. */
 static_assert(std::atomic<bool>::is_always_lock_free);
