@@ -16,7 +16,7 @@ namespace gsync {
 const std::string Gpio::kGpioPathPrefix("/sys/class/gpio/");
 
 static bool FileExists(const std::string& filename) {
-    struct stat buffer;
+    struct stat buffer {};
     return (0 == stat(filename.c_str(), &buffer));
 }
 
@@ -170,7 +170,7 @@ bool Gpio::WaitForEdge() {
         return false;
     }
 
-    struct epoll_event ev;
+    struct epoll_event ev {};
     ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
     ev.data.fd = fd;
 

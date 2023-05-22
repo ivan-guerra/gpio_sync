@@ -20,7 +20,7 @@ static void ExitHandler(int sig) {
 }
 
 static int InitAction(int sig, int flags, void (*handler)(int)) {
-    struct sigaction action;
+    struct sigaction action {};
     action.sa_flags = flags;
     action.sa_handler = handler;
     sigemptyset(&action.sa_mask);
