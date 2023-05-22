@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace gsync {
@@ -66,19 +67,21 @@ Gpio::Gpio(int number)
     : number_(number),
       name_("gpio" + std::to_string(number_)),
       path_(kGpioPathPrefix + name_ + "/") {
-    ExportGpio();
+    if ((number <= 0) || !ExportGpio()) {
+        throw std::runtime_error("invalid pin number");
+    }
     static const int kSysFsSetupDelayUsec = 250000;
     usleep(kSysFsSetupDelayUsec);
 }
 
-bool Gpio::Dir(Direction dir) const {
+void Gpio::Dir(Direction dir) const {
     switch (dir) {
         case Direction::kInput:
-            return Write(path_, "direction", "in");
+            Write(path_, "direction", "in");
+            break;
         case Direction::kOutput:
-            return Write(path_, "direction", "out");
-        default:
-            return false;
+            Write(path_, "direction", "out");
+            break;
     }
 }
 
@@ -87,14 +90,14 @@ Gpio::Direction Gpio::Dir() const {
     return (input == "in") ? Direction::kInput : Direction::kOutput;
 }
 
-bool Gpio::Val(Value value) const {
+void Gpio::Val(Value value) const {
     switch (value) {
         case kHigh:
-            return Write(path_, "value", "1");
+            Write(path_, "value", "1");
+            break;
         case kLow:
-            return Write(path_, "value", "0");
-        default:
-            return false;
+            Write(path_, "value", "0");
+            break;
     }
 }
 
@@ -115,26 +118,28 @@ void Gpio::ToggleOutput() const {
     }
 }
 
-bool Gpio::SetActiveLow(bool is_low) const {
+void Gpio::SetActiveLow(bool is_low) const {
     if (is_low) {
-        return Write(path_, "active_low", "1");
+        Write(path_, "active_low", "1");
     } else {
-        return Write(path_, "active_low", "0");
+        Write(path_, "active_low", "0");
     }
 }
 
-bool Gpio::EdgeType(Edge edge) const {
+void Gpio::EdgeType(Edge edge) const {
     switch (edge) {
         case Edge::kNone:
-            return Write(path_, "edge", "none");
+            Write(path_, "edge", "none");
+            break;
         case Edge::kRising:
-            return Write(path_, "edge", "rising");
+            Write(path_, "edge", "rising");
+            break;
         case Edge::kFalling:
-            return Write(path_, "edge", "falling");
+            Write(path_, "edge", "falling");
+            break;
         case Edge::kBoth:
-            return Write(path_, "edge", "both");
-        default:
-            return false;
+            Write(path_, "edge", "both");
+            break;
     }
 }
 

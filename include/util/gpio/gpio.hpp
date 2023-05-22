@@ -16,32 +16,34 @@ class Gpio {
    public:
     /** Pin input/output settings. */
     enum class Direction {
-        kInput,
-        kOutput,
+        kInput,  /**< Input pin. */
+        kOutput, /**< Output pin. */
     };
 
     /** Pin high/low values. */
     enum Value {
-        kLow = 0,
-        kHigh = 1,
+        kLow = 0,  /**< Line is low. */
+        kHigh = 1, /**< Line is high. */
     };
 
     /** Pin edge types. */
     enum class Edge {
-        kNone,
-        kRising,
-        kFalling,
-        kBoth,
+        kNone,    /**< No edge setting. */
+        kRising,  /**< Rising edge. */
+        kFalling, /**< Falling edge. */
+        kBoth,    /**< Both rising and falling edge. */
     };
 
     /**
      * Construct a GPIO pin controller for the pin with the parameter number.
      *
      * The pin number passed to the constructor is the internal GPIO number.
-     * As an example, header label GPIOP1_17 translates to GPIO number (32 * 1)
-     * + 17 = 49.
+     * As an example, header label GPIOP1_17 translates to GPIO number (32 x 1)
+     * \+ 17 = 49.
      *
-     * @param [in] number Export GPIO number.
+     * @param[in] number Export GPIO number.
+     *
+     * @throws std::runtime_error
      */
     explicit Gpio(int number);
 
@@ -60,17 +62,17 @@ class Gpio {
     Gpio(Gpio&&) = delete;
     Gpio& operator=(Gpio&&) = delete;
 
-    /** Return the GPIO number exported to /sys/class/gpio */
+    /** Return the GPIO number exported to \a /sys/class/gpio/export */
     int SysFsNumber() const { return number_; }
 
-    /** Return true if the GPIO direction is set to the parameter direction. */
-    bool Dir(Direction direction) const;
+    /** Set the GPIO in/out direction. */
+    void Dir(Direction direction) const;
 
     /** Return the current in/out direction of the GPIO. */
     Direction Dir() const;
 
-    /** Return true if the GPIO has the parameter value. */
-    bool Val(Value value) const;
+    /** Set the GPIO to a low/high value. */
+    void Val(Value value) const;
 
     /** Return the current low/high value of the GPIO. */
     Value Val() const;
@@ -83,32 +85,32 @@ class Gpio {
     void ToggleOutput() const;
 
     /**
-     * Set or clear the active_low setting of the GPIO
+     * Set or clear the \a active_low setting of the GPIO
      *
-     * @param is_low [in] If set to true, the GPIO active_low property will be
-     * set, otherwise, the active_low property will be cleared.
+     * @param[in] is_low If set to true, the GPIO active_low property will be
+     * set, otherwise, the \a active_low property will be cleared.
      */
-    bool SetActiveLow(bool is_low = true) const;
+    void SetActiveLow(bool is_low = true) const;
 
-    /** Return true if the GPIO is set active high. */
-    bool SetActiveHigh() const { return SetActiveLow(false); }
+    /** Set the GPIO to active high. */
+    void SetActiveHigh() const { SetActiveLow(false); }
 
     /* The original source of this code claims a ~20x speedup when writing GPIO
      * values using stream operations versus using a write() sys call. */
 
-    /** Open an output stream to the GPIO's value file. */
+    /** Open an output stream to the GPIO's \a value file. */
     void StreamOpen() { stream_.open((path_ + "value").c_str()); }
 
-    /** Write the parameter value to the GPIO value file. */
+    /** Write the parameter value to the GPIO \a value file. */
     void StreamWrite(Value value) { stream_ << value << std::flush; }
 
     /** Close an output stream previously opened with a call to StreamOpen(). */
     void StreamClose() { stream_.close(); }
 
-    /** Return true if the value in the GPIO's edge file is set to edge. */
-    bool EdgeType(Gpio::Edge edge) const;
+    /** Set the GPIO edge type. */
+    void EdgeType(Gpio::Edge edge) const;
 
-    /** Return the current edge setting of the GPIO. */
+    /** Return the current GPIO edge setting. */
     Gpio::Edge EdgeType() const;
 
     /**
@@ -117,7 +119,7 @@ class Gpio {
      * This method has the side effect of setting the GPIO to be an input pin.
      *
      * @return True if an event is detected. On error, false is returned and
-     * errno is set.
+     * \a errno is set.
      */
     bool WaitForEdge();
 

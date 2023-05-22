@@ -28,6 +28,8 @@ static int InitAction(int sig, int flags, void (*handler)(int)) {
     return sigaction(sig, &action, NULL);
 }
 
+/* Wait for rising edge events on the GPIO. When an event comes, log the
+ * CLOCK_MONOTONIC time in shared memory. */
 static void RunEventLoop(gsync::Gpio& runtime_gpio,
                          gsync::IpShMemData<struct timespec>* runtime_shmem) {
     while (!exit_gtimer) {
@@ -42,9 +44,6 @@ static void RunEventLoop(gsync::Gpio& runtime_gpio,
 }
 
 int main(int argc, char** argv) {
-    /* See https://programmador.com/posts/real-time-linux-app-development/ */
-    gsync::mem::ConfigureMemForRt();
-
     /* Use the SIGINT signal to trigger program exit. */
     if (-1 == InitAction(SIGINT, 0, ExitHandler)) {
         perror("failed to register SIGINT handler");
@@ -58,36 +57,32 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    /* Allocate shared memory slot for storing our peers' last runtime. */
-    const int kShmemKey = std::stoi(argv[2]);
-    gsync::IpShMem<struct timespec> shmem_ctrl;
-    gsync::IpShMemData<struct timespec>* runtime_shmem =
-        shmem_ctrl.Initialize(kShmemKey);
-    if (!runtime_shmem) {
-        perror("failed to allocate shared memory");
-        return 1;
+    bool has_error = false;
+    try {
+        /* See https://programmador.com/posts/real-time-linux-app-development/
+         */
+        gsync::mem::ConfigureMemForRt();
+
+        /* Allocate shared memory slot for storing our peers' last runtime. */
+        const int kShmemKey = std::stoi(argv[2]);
+        gsync::IpShMem<struct timespec> shmem_ctrl(kShmemKey);
+        gsync::IpShMemData<struct timespec>* runtime_shmem =
+            shmem_ctrl.GetData();
+
+        /* Export the GPIO which we will be polling for rising edge events. */
+        const int kGpioNum = std::stoi(argv[1]);
+        gsync::Gpio runtime_gpio(kGpioNum);
+        runtime_gpio.Dir(gsync::Gpio::Direction::kInput);
+        runtime_gpio.EdgeType(gsync::Gpio::Edge::kRising);
+
+        RunEventLoop(runtime_gpio, runtime_shmem);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        has_error = true;
+    } catch (const std::exception& e) {
+        std::cerr << "error: invalid argument" << std::endl;
+        has_error = true;
     }
 
-    /* Export the GPIO which we will be polling for rising edge events. */
-    const int kGpioNum = std::stoi(argv[1]);
-    gsync::Gpio runtime_gpio(kGpioNum);
-    if (!runtime_gpio.Dir(gsync::Gpio::Direction::kInput)) {
-        perror("failed to set gpio direction to 'in'");
-        return 1;
-    }
-    if (!runtime_gpio.EdgeType(gsync::Gpio::Edge::kRising)) {
-        perror("failed to set gpio edge type to 'rising'");
-        return 1;
-    }
-
-    /* Wait for rising edge events on the GPIO. When an event comes, log the
-     * CLOCK_MONOTONIC time in shared memory. */
-    RunEventLoop(runtime_gpio, runtime_shmem);
-
-    if (!shmem_ctrl.Shutdown()) {
-        perror("failed to cleanup shared memory");
-        return 1;
-    }
-
-    return 0;
+    return (has_error) ? 1 : 0;
 }

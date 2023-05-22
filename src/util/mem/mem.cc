@@ -8,21 +8,24 @@
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <stdexcept>
 
 void gsync::mem::ConfigureMallocForRt() {
     /* Lock all pages to RAM. */
     if (-1 == mlockall(MCL_CURRENT | MCL_FUTURE)) {
-        perror("failed to lock memory pages via mlockall()");
+        throw std::runtime_error("failed to lock memory pages via mlockall()");
     }
 
     /* Disable heap trimming. */
     if (!mallopt(M_TRIM_THRESHOLD, -1)) {
-        perror("failed to set M_TRIM_THRESHOLD option via mallopt()");
+        throw std::runtime_error(
+            "failed to set M_TRIM_THRESHOLD option via mallopt()");
     }
 
     /* Allocate dynamic memory to the process heap (i.e., disable mmap()). */
     if (!mallopt(M_MMAP_MAX, 0)) {
-        perror("failed to set M_MMAP_MAX option via mallopt()");
+        throw std::runtime_error(
+            "failed to set M_MMAP_MAX option via mallopt()");
     }
 }
 
@@ -36,7 +39,7 @@ void gsync::mem::PrefaultStack() {
 void gsync::mem::PrefaultHeap() {
     std::unique_ptr<unsigned char[]> dummy(new unsigned char[kMaxHeapSize]);
     if (!dummy) {
-        return;
+        throw std::runtime_error("failed to allocate kMaxHeapSize bytes");
     }
 
     for (int64_t i = 0; i < kMaxHeapSize; i += sysconf(_SC_PAGESIZE)) {
