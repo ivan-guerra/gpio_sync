@@ -9,9 +9,8 @@
 #include "util/mem/mem.hpp"
 #include "util/shmem/shmem.hpp"
 
-/* Make sure the atomic type we'll operate on is lock-free. */
+/* An atomic_bool used within a signal handler context must be lock free. */
 static_assert(std::atomic<bool>::is_always_lock_free);
-
 std::atomic_bool exit_gtimer = false;
 
 static void ExitHandler(int sig) {
