@@ -33,6 +33,7 @@ add_link_options(
     "$<$<CONFIG:Debug>:-fsanitize=address>"
 )
 
+add_subdirectory(gsync)
 add_subdirectory(gtimer)
 add_subdirectory(sync)
 add_subdirectory(util)
