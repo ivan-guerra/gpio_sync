@@ -34,4 +34,5 @@ add_link_options(
 )
 
 add_subdirectory(gtimer)
+add_subdirectory(sync)
 add_subdirectory(util)
