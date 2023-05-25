@@ -1,3 +1,4 @@
+#include <getopt.h>
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
@@ -42,17 +43,44 @@ static void RunEventLoop(gsync::Gpio& runtime_gpio,
     }
 }
 
+static void PrintUsage() {
+    std::cout << "usage: gtimer [OPTIONS]... GPIO_IN SHMEM_KEY" << std::endl;
+    std::cout << "GPIO Signal Time Recorder" << std::endl;
+    std::cout << "\t-h, --help\tprint this help page" << std::endl;
+    std::cout << "\tGPIO_IN\t\tinput gpio pin number" << std::endl;
+    std::cout << "\tSHMEM_KEY\tshared memory key" << std::endl;
+}
+
 int main(int argc, char** argv) {
-    /* Use the SIGINT signal to trigger program exit. */
-    if (-1 == InitAction(SIGINT, 0, ExitHandler)) {
-        perror("failed to register SIGINT handler");
+    struct option long_options[] = {
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0},
+    };
+    int opt = '\0';
+    int long_index = 0;
+    while (-1 != (opt = getopt_long(argc, argv, "h",
+                                    static_cast<struct option*>(long_options),
+                                    &long_index))) {
+        switch (opt) {
+            case 'h':
+                PrintUsage();
+                return 0;
+            case '?':
+                return 1;
+        }
+    }
+    if (!argv[optind]) {
+        std::cerr << "error: missing GPIO_IN" << std::endl;
+        return 1;
+    }
+    if (!argv[optind + 1]) {
+        std::cerr << "error: missing SHMEM_KEY" << std::endl;
         return 1;
     }
 
-    if (argc != 3) {
-        std::cerr << "error missing one or more required arguments"
-                  << std::endl;
-        std::cerr << "usage: gtimer GPIO_NUM SHMEM_KEY" << std::endl;
+    /* Use the SIGINT signal to trigger program exit. */
+    if (-1 == InitAction(SIGINT, 0, ExitHandler)) {
+        perror("failed to register SIGINT handler");
         return 1;
     }
 
@@ -63,14 +91,12 @@ int main(int argc, char** argv) {
         gsync::mem::ConfigureMemForRt();
 
         /* Allocate shared memory slot for storing our peers' last runtime. */
-        const int kShmemKey = std::stoi(argv[2]);
-        gsync::IpShMem<struct timespec> shmem_ctrl(kShmemKey);
+        gsync::IpShMem<struct timespec> shmem_ctrl(std::stoi(argv[optind + 1]));
         gsync::IpShMemData<struct timespec>* runtime_shmem =
             shmem_ctrl.GetData();
 
-        /* Export the GPIO which we will be polling for rising edge events. */
-        const int kGpioNum = std::stoi(argv[1]);
-        gsync::Gpio runtime_gpio(kGpioNum);
+        /* Export the GPIO which we will be checking for rising edge events. */
+        gsync::Gpio runtime_gpio(std::stoi(argv[optind]));
         runtime_gpio.Dir(gsync::Gpio::Direction::kInput);
         runtime_gpio.EdgeType(gsync::Gpio::Edge::kRising);
 
@@ -78,10 +104,10 @@ int main(int argc, char** argv) {
     } catch (const std::runtime_error& e) {
         std::cerr << "error: " << e.what() << std::endl;
         has_error = true;
-    } catch (const std::exception& e) {
-        std::cerr << "error: invalid argument" << std::endl;
+    } catch (const std::logic_error& e) {
+        std::cerr << "error: GPIO_IN and SHMEM_KEY must be positive integers"
+                  << std::endl;
         has_error = true;
     }
-
     return (has_error) ? 1 : 0;
 }
