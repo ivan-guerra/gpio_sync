@@ -107,7 +107,12 @@ Gpio::Value Gpio::Val() const {
 }
 
 void Gpio::ToggleOutput() const {
-    Dir(Direction::kOutput);
+    /* Toggling an output value doesn't make sense if this GPIO is configured as
+     * an input pin. */
+    if (Dir() != Direction::kOutput) {
+        return;
+    }
+
     switch (Val()) {
         case Value::kLow:
             Val(Value::kHigh);
@@ -157,8 +162,10 @@ Gpio::Edge Gpio::EdgeType() const {
 }
 
 bool Gpio::WaitForEdge() {
-    /* We have to set the pin to be an input pin order to poll it. */
-    Dir(Direction::kInput);
+    /* Doesn't make sense to wait for events on a GPIO configured for output. */
+    if (Dir() == Direction::kOutput) {
+        return false;
+    }
 
     int epollfd = epoll_create(1);
     if (-1 == epollfd) {

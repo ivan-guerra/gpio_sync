@@ -78,9 +78,10 @@ class Gpio {
     Value Val() const;
 
     /**
-     * Toggle the GPIO value
+     * Toggle the GPIO output value.
      *
-     * This method has the side effect of setting the GPIO to be an output pin.
+     * Toggle the output value of the GPIO. If the GPIO is configured as an
+     * input pin, ToggleOutput() will do nothing.
      */
     void ToggleOutput() const;
 
@@ -116,7 +117,8 @@ class Gpio {
     /**
      * Block indefinitely until an edge trigger event is detected.
      *
-     * This method has the side effect of setting the GPIO to be an input pin.
+     * The GPIO must be configured as an input pin, otherwise, WaitForEdge()
+     * will always return false.
      *
      * @return True if an event is detected. On error, false is returned and
      * \a errno is set.
