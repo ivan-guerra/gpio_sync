@@ -56,13 +56,11 @@ static void RunEventLoop(const gsync::KuramotoSync& sync,
     };
 
     timespec empty_ts = {.tv_sec = 0, .tv_nsec = 0};
-    timespec expected_wakeup = {};
     timespec actual_wakeup = {};
     timespec peer_wakeup = {};
     timespec new_wakeup = {};
     timespec prev_peer_wakeup = {};
 
-    clock_gettime(CLOCK_MONOTONIC, &expected_wakeup);
     while (!exit_gtimer) {
         /* Send wakeup signal to our peer. */
         runtime_gpio.Val(gsync::Gpio::Value::kHigh);
@@ -82,18 +80,16 @@ static void RunEventLoop(const gsync::KuramotoSync& sync,
             new_wakeup =
                 SetWakeupUsingBaseFreq(actual_wakeup, sync.Frequency());
         } else {
-            /* Compute a new wakeup time that will bring us in or keep us in
-             * sync with our peer. */
-            new_wakeup = sync.ComputeNewWakeup(expected_wakeup, actual_wakeup,
-                                               peer_wakeup);
+            /* Compute a new wakeup time that will keep us in sync with our
+             * peer. */
+            new_wakeup = sync.ComputeNewWakeup(actual_wakeup, peer_wakeup);
         }
         prev_peer_wakeup = peer_wakeup;
 
         /* Bring down the GPIO line as we wrap up this run. */
         runtime_gpio.Val(gsync::Gpio::Value::kLow);
 
-        /* Save off our expected wakeup time and sleep until our next cycle. */
-        expected_wakeup = new_wakeup;
+        /* Sleep until our next cycle. */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &new_wakeup, NULL);
     }
 }

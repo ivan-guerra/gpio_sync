@@ -39,8 +39,6 @@ class KuramotoSync {
     /**
      * Run the Kuramoto algorithm to compute this participant's new wakeup time.
      *
-     * @param[in] expected_wakeup The time when this participant expected to
-     * wakeup in its current cycle.
      * @param[in] actual_wakeup The time when this participant actually wokeup
      * to begin its current cycle.
      * @param[in] peer_wakeup The last wakeup time reported by this
@@ -49,8 +47,7 @@ class KuramotoSync {
      * @returns The new wakeup time for this participant which would bring him
      * closer to or keep him in sync with his peer.
      */
-    timespec ComputeNewWakeup(const timespec& expected_wakeup,
-                              const timespec& actual_wakeup,
+    timespec ComputeNewWakeup(const timespec& actual_wakeup,
                               const timespec& peer_wakeup) const;
 
    private:

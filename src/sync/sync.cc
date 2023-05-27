@@ -39,22 +39,17 @@ KuramotoSync::KuramotoSync(int frequency, double coupling_constant)
     }
 }
 
-timespec KuramotoSync::ComputeNewWakeup(const timespec& expected_wakeup,
-                                        const timespec& actual_wakeup,
+timespec KuramotoSync::ComputeNewWakeup(const timespec& actual_wakeup,
                                         const timespec& peer_wakeup) const {
-    double expected_wakeup_ns = ToNano(expected_wakeup);
-    double actual_wakeup_ns = ToNano(actual_wakeup);
-    double peer_wakeup_ns = ToNano(peer_wakeup);
-
     /* Compute the variables of the Kuramoto Model for the current run. */
     double omega_i = NanoToRad((1.0 / frequency_) * kSecToNano);
-    double dt_i = actual_wakeup_ns - expected_wakeup_ns;
+    double dt_i = ToNano(actual_wakeup);
     double dtheta_i = NanoToRad(dt_i);
-    double dt_j = peer_wakeup_ns - expected_wakeup_ns;
+    double dt_j = ToNano(peer_wakeup);
     double dtheta_j = NanoToRad(dt_j);
 
-    /* Straightforward implementation of the common form of the Kuramoto Model
-     * as seen here https://en.wikipedia.org/wiki/Kuramoto_model */
+    /* Implementation of the common form of the Kuramoto Model as seen here
+     * https://en.wikipedia.org/wiki/Kuramoto_model */
     double dtheta_dt =
         omega_i +
         ((coupling_constant_ / static_cast<double>(kNumParticipants)) *
