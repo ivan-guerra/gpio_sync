@@ -48,9 +48,9 @@ timespec KuramotoSync::ComputeNewWakeup(const timespec& expected_wakeup,
 
     /* Compute the variables of the Kuramoto Model for the current run. */
     double omega_i = NanoToRad((1.0 / frequency_) * kSecToNano);
-    double dt_i = expected_wakeup_ns - actual_wakeup_ns;
+    double dt_i = actual_wakeup_ns - expected_wakeup_ns;
     double dtheta_i = NanoToRad(dt_i);
-    double dt_j = expected_wakeup_ns - peer_wakeup_ns;
+    double dt_j = peer_wakeup_ns - expected_wakeup_ns;
     double dtheta_j = NanoToRad(dt_j);
 
     /* Straightforward implementation of the common form of the Kuramoto Model
