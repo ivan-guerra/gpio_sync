@@ -11,6 +11,10 @@ target_sources(${PROJECT_NAME}
     PRIVATE gpio.cc
 )
 
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE gpiodcxx
+)
+
 target_include_directories(${PROJECT_NAME}
     PUBLIC ${GSYNC_INCLUDE_DIR}
 )

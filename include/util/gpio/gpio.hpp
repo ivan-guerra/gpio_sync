@@ -1,16 +1,16 @@
 #ifndef GPIO_H_
 #define GPIO_H_
 
-#include <fstream>
+#include <gpiod.hpp>
 #include <string>
 
 namespace gsync {
 
 /**
- * GPIO pin control utility.
+ * GPIO control utility.
  *
- * This source code is a modified version of Derek Molloy's GPIO control code
- * from the book "Exploring BeagleBone".
+ * A wrapper around libgpiod's C++ bindings. Note, Gpio propagates the std
+ * exceptions that are thrown by libgpiod!
  */
 class Gpio {
    public:
@@ -35,41 +35,40 @@ class Gpio {
     };
 
     /**
-     * Construct a GPIO pin controller for the pin with the parameter number.
+     * Construct a GPIO controller.
      *
-     * The pin number passed to the constructor is the internal GPIO number.
-     * As an example, header label GPIOP1_17 translates to GPIO number (32 x 1)
-     * \+ 17 = 49.
-     *
-     * @param[in] number Export GPIO number.
-     *
-     * @throws std::runtime_error
+     * @param[in] dev GPIO device name (e.g., /dev/gpiochip0).
+     * @param[in] line GPIO line offset.
+     * @param[in] name Optional GPIO pin name.
      */
-    explicit Gpio(int number);
+    Gpio(const std::string& dev, int offset,
+         const std::string& name = "unnamed");
 
-    /**
-     * GPIO pin controller destructor.
-     *
-     * The destructor will unexport the pin number given at construction.
-     */
-    ~Gpio() { UnexportGpio(); }
-
-    /* The following constructors/assignment overloads are deleted because the
-     * class uses a stream object that does not support copy/move. */
     Gpio() = delete;
-    Gpio(const Gpio&) = delete;
-    Gpio& operator=(const Gpio&) = delete;
-    Gpio(Gpio&&) = delete;
-    Gpio& operator=(Gpio&&) = delete;
 
-    /** Return the GPIO number exported to \a /sys/class/gpio/export */
-    int SysFsNumber() const { return number_; }
+    ~Gpio() = default;
+    Gpio(const Gpio&) = default;
+    Gpio& operator=(const Gpio&) = default;
+    Gpio(Gpio&&) = default;
+    Gpio& operator=(Gpio&&) = default;
+
+    /** Return the chip label. */
+    std::string ChipLabel() const { return chip_.label(); }
+
+    /** Return the chip name. */
+    std::string ChipName() const { return chip_.name(); }
+
+    /** Return the line name. */
+    std::string LineName() const { return line_.name(); }
+
+    /** Return the line offset. */
+    unsigned int LineOffset() const { return line_.offset(); }
 
     /** Set the GPIO in/out direction. */
-    void Dir(Direction direction) const;
+    void Dir(Direction direction);
 
     /** Return the current in/out direction of the GPIO. */
-    Direction Dir() const;
+    Direction Dir() const { return dir_; }
 
     /** Set the GPIO to a low/high value. */
     void Val(Value value) const;
@@ -77,13 +76,11 @@ class Gpio {
     /** Return the current low/high value of the GPIO. */
     Value Val() const;
 
-    /**
-     * Toggle the GPIO output value.
-     *
-     * Toggle the output value of the GPIO. If the GPIO is configured as an
-     * input pin, ToggleOutput() will do nothing.
-     */
-    void ToggleOutput() const;
+    /** Set the GPIO edge type. */
+    void EdgeType(Gpio::Edge edge);
+
+    /** Return the current GPIO edge setting. */
+    Gpio::Edge EdgeType() const { return edge_; }
 
     /**
      * Set or clear the \a active_low setting of the GPIO
@@ -96,45 +93,18 @@ class Gpio {
     /** Set the GPIO to active high. */
     void SetActiveHigh() const { SetActiveLow(false); }
 
-    /* The original source of this code claims a ~20x speedup when writing GPIO
-     * values using stream operations versus using a write() sys call. */
+    /** Toggle the GPIO output value. */
+    void ToggleOutput() const;
 
-    /** Open an output stream to the GPIO's \a value file. */
-    void StreamOpen() { stream_.open((path_ + "value").c_str()); }
-
-    /** Write the parameter value to the GPIO \a value file. */
-    void StreamWrite(Value value) { stream_ << value << std::flush; }
-
-    /** Close an output stream previously opened with a call to StreamOpen(). */
-    void StreamClose() { stream_.close(); }
-
-    /** Set the GPIO edge type. */
-    void EdgeType(Gpio::Edge edge) const;
-
-    /** Return the current GPIO edge setting. */
-    Gpio::Edge EdgeType() const;
-
-    /**
-     * Block indefinitely until an edge trigger event is detected.
-     *
-     * The GPIO must be configured as an input pin, otherwise, WaitForEdge()
-     * will always return false.
-     *
-     * @return True if an event is detected. On error, false is returned and
-     * \a errno is set.
-     */
-    bool WaitForEdge();
+    /** Block indefinitely until an edge triggered event is detected. */
+    void WaitForEdge();
 
    private:
-    static const std::string kGpioPathPrefix;
-
-    bool ExportGpio() const;
-    bool UnexportGpio() const;
-
-    int number_;       /**< The GPIO number of the object. */
-    std::string name_; /**< The name of the GPIO (e.g., gpio50) */
-    std::string path_; /**< Path to the GPIO (e.g., /sys/class/gpio/gpio50) */
-    std::ofstream stream_; /**< Stream object used to write GPIO values. */
+    gpiod::chip chip_;
+    gpiod::line line_;
+    std::string name_;
+    Direction dir_;
+    Edge edge_;
 };
 
 }  // namespace gsync
