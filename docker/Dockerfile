@@ -7,4 +7,8 @@ RUN apt-get update && \
         g++-arm-linux-gnueabihf \
         binutils-arm-linux-gnueabihf
 
+RUN dpkg --add-architecture armhf && \
+    apt-get update && \
+    apt-get install -y libgpiod-dev:armhf
+
 WORKDIR /opt/gpio_sync/scripts
