@@ -95,14 +95,18 @@ static void RunEventLoop(const gsync::KuramotoSync& sync,
 }
 
 static void PrintUsage() {
-    std::cout << "usage: gsync [OPTIONS]... GPIO_OUT SHMEM_KEY" << std::endl;
+    std::cout << "usage: gsync [OPTION]... GPIO_DEVNAME GPIO_OFFSET SHMEM_KEY"
+              << std::endl;
     std::cout << "GPIO Based Synchronizer" << std::endl;
-    std::cout << "\t-f, --frequency\t\tsync task frequency in Hz" << std::endl;
-    std::cout << "\t-k, --coupling-const\tKuramoto coupling constant"
+    std::cout << "\t-f, --frequency\t\tspecify sync task frequency in Hz"
+              << std::endl;
+    std::cout << "\t-k, --coupling-const\tspecify Kuramoto coupling constant"
               << std::endl;
     std::cout << "\t-h, --help\t\tprint this help page" << std::endl;
-    std::cout << "\tGPIO_OUT\t\toutput gpio pin number" << std::endl;
-    std::cout << "\tSHMEM_KEY\t\tshared memory key" << std::endl;
+    std::cout << "\tGPIO_DEVNAME\t\tspecify input gpio device name"
+              << std::endl;
+    std::cout << "\tGPIO_OFFSET\t\tspecify input gpio offset" << std::endl;
+    std::cout << "\tSHMEM_KEY\t\tspecify shared memory key" << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -150,10 +154,14 @@ int main(int argc, char** argv) {
         }
     }
     if (!argv[optind]) {
-        std::cerr << "error: missing GPIO_OUT" << std::endl;
+        std::cerr << "error: missing GPIO_DEVNAME" << std::endl;
         return 1;
     }
     if (!argv[optind + 1]) {
+        std::cerr << "error: missing GPIO_OFFSET" << std::endl;
+        return 1;
+    }
+    if (!argv[optind + 2]) {
         std::cerr << "error: missing SHMEM_KEY" << std::endl;
         return 1;
     }
@@ -164,21 +172,18 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    bool has_error = false;
     try {
         /* See https://programmador.com/posts/real-time-linux-app-development/
          */
         gsync::mem::ConfigureMemForRt();
 
         /* Attach to shared memory allocated by the gtimer process. */
-        const int kShmemKey = std::stoi(argv[optind + 1]);
-        gsync::IpShMem<struct timespec> shmem_ctrl(kShmemKey);
+        gsync::IpShMem<struct timespec> shmem_ctrl(std::stoi(argv[optind + 2]));
         gsync::IpShMemData<struct timespec>* peer_runtime =
             shmem_ctrl.GetData();
 
-        /* Export the GPIO which we will be sending our wakeup signals on. */
-        const int kGpioNum = std::stoi(argv[optind]);
-        gsync::Gpio runtime_gpio(kGpioNum);
+        /* Config the GPIO which we will be sending our wakeup signals on. */
+        gsync::Gpio runtime_gpio(argv[optind], std::stoi(argv[optind + 1]));
         runtime_gpio.Dir(gsync::Gpio::Direction::kOutput);
         runtime_gpio.Val(gsync::Gpio::Value::kLow);
 
@@ -186,13 +191,9 @@ int main(int argc, char** argv) {
         gsync::KuramotoSync sync(frequency_hz, coupling_const);
 
         RunEventLoop(sync, runtime_gpio, peer_runtime);
-    } catch (const std::runtime_error& e) {
-        std::cerr << "error: " << e.what() << std::endl;
-        has_error = true;
-    } catch (const std::logic_error& e) {
-        std::cerr << "error: GPIO_OUT and SHMEM_KEY must be positive integers"
-                  << std::endl;
-        has_error = true;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
-    return (has_error) ? 1 : 0;
+    return 0;
 }
