@@ -1,9 +1,13 @@
 # GPIO Driven Synchronization
 
+<p align="center">
+  <img width="550" height="400" src="docs/images/synced.jpg">
+</p>
+
 This project implements an application that synchronizes two machines using GPIO
 signals. This README describes how to configure the hardware and software in
 order to run `gsync`. For a more in depth discussion of the project, check out
-the [GPIO Based Synchronization][1] blog post. For project documentation, see
+the [GPIO Driven Synchronization][1] blog post. For project documentation, see
 the section [Building the Docs and More](#building-the-docs-and-more).
 
 ### Hardware Setup
@@ -22,7 +26,9 @@ to run `gsync`:
 
 Below is the wiring configuration used during testing.
 
-<img src="docs/images/gsync_circuit.jpg" width="750" height="600">
+<p align="center">
+  <img width="750" height="600" src="docs/images/gsync_circuit.jpg">
+</p>
 
 `P9_15` and `P9_23` are used as the GPIO TX/RX lines. **Be sure to cross the
 GPIO lines as shown in the diagram**. `P9_2` is GND. If you choose to use
